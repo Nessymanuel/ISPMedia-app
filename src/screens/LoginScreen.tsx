@@ -1,9 +1,19 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  Alert,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { API_BASE_URL } from "@env";
 
 export default function LoginScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -11,33 +21,23 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
-   /* try {
-      const userData = await AsyncStorage.getItem("user");
-      if (!userData) {
-        Alert.alert("Erro", "Nenhuma conta encontrada.");
-        return;
-      }
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/Utilizador/login`, {
+        email,
+        senha: password,
+      });
 
-      const user = JSON.parse(userData);
+      const user = response.data;
+      await AsyncStorage.setItem("user", JSON.stringify(user));
 
-      if (user.email !== email || user.password !== password) {
-        Alert.alert("Erro", "E-mail ou senha incorretos.");
-        return;
-      }
-
-      console.log("Login realizado");
-      navigation.navigate("Profile");
-    } catch (e) {
-      console.error(e);
-      Alert.alert("Erro", "Falha ao realizar login.");
-       navigation.navigate("Profile");
-    }*/
-   
-    navigation.reset({
+      navigation.reset({
         index: 0,
         routes: [{ name: "Dashboard" }],
       });
-      
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Erro", "Email ou senha inválidos.");
+    }
   };
 
   return (
@@ -78,13 +78,53 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", backgroundColor: "#fff", paddingHorizontal: 24 },
-  logo: { width: 250, height: 100, alignSelf: "center", marginBottom: 12 },
-  title: { fontSize: 22, fontWeight: "bold", textAlign: "center", marginBottom: 8 },
-  subtitle: { fontSize: 14, textAlign: "center", color: "#666", marginBottom: 24 },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 6, padding: 12, marginBottom: 16 },
-  button: { backgroundColor: "#7c3aed", padding: 16, borderRadius: 6, alignItems: "center", marginBottom: 16 },
-  buttonText: { color: "#fff", fontWeight: "bold" },
-  footer: { flexDirection: "row", justifyContent: "center" },
-  link: { color: "#7c3aed" },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    paddingHorizontal: 24,
+  },
+  logo: {
+    width: 250,
+    height: 100,
+    alignSelf: "center",
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    textAlign: "center",
+    color: "#666",
+    marginBottom: 24,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 16,
+  },
+  button: {
+    backgroundColor: "#7c3aed",
+    padding: 16,
+    borderRadius: 6,
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  link: {
+    color: "#7c3aed",
+  },
 });
