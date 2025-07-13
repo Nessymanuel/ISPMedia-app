@@ -14,9 +14,7 @@ export default function MyReviewsScreen() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Text style={styles.backButtonText}>Voltar</Text>
-      </TouchableOpacity>
+    
       <Text style={styles.title}>Minhas Críticas</Text>
       <FlatList
         data={reviews}

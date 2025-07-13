@@ -10,10 +10,14 @@ import ContentDetailScreen from "./src/screens/ContentDetailScreen";
 import MyReviewsScreen from "./src/screens/MyReviewsScreen";
 import MyUploadsScreen from "./src/screens/MyUploadsScreen";
 import { StatusBar, View } from "react-native";
+import ArtistListScreen from "src/screens/ArtistListScreen";
+import AlbumListScreen from "src/screens/AlbumListScreen";
+import RadioScreen from "src/screens/RadioScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
+  
   return (
     <>
       <StatusBar
@@ -38,6 +42,10 @@ export default function App() {
             {/* <Stack.Screen name="MyPlaylists" component={MyPlaylistsScreen} />*/}
             <Stack.Screen name="MyReviews" component={MyReviewsScreen} />
             <Stack.Screen name="ContentDetail" component={ContentDetailScreen} />
+            <Stack.Screen name="ArtistList" component={ArtistListScreen} />
+            <Stack.Screen name="AlbumList" component={AlbumListScreen} />
+            <Stack.Screen name="Radio" component={RadioScreen} />
+
           </Stack.Navigator>
         </NavigationContainer>
       </View>

@@ -8,4 +8,7 @@ export type RootStackParamList = {
     MyReviews: undefined;
     ContentDetail: { id: string };
     Dashboard: undefined;
+    ArtistList: undefined;
+    AlbumList: undefined;
+    Radio: undefined;
 };

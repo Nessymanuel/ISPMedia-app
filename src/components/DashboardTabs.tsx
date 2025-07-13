@@ -5,6 +5,7 @@ import MyUploadsScreen from "../screens/MyUploadsScreen";
 import MyReviewsScreen from "../screens/MyReviewsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
+import RadioScreen from "src/screens/RadioScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -42,6 +43,26 @@ export default function DashboardTabs() {
           ),
         }}
       />
+
+      
+<Tab.Screen
+  name="Radio"
+  component={RadioScreen}
+  options={{
+    tabBarLabel: "Rádio",
+    tabBarIcon: ({ color }) => (
+      <Ionicons name="radio" size={22} color={color} />
+    ),
+    tabBarLabelStyle: { fontSize: 12 },
+    tabBarIconStyle: {
+      backgroundColor: "#a78bfa", // lilás
+      padding: 8,
+      borderRadius: 50,
+    },
+    tabBarActiveTintColor: "#fff",
+    tabBarInactiveTintColor: "#eee",
+  }}
+/>
       
       <Tab.Screen
         name="Reviews"
