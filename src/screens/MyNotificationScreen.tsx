@@ -9,7 +9,7 @@ const reviews = [
   { id: "2", content: "Minha Música 1", rating: 5, comment: "Excelente qualidade!" },
 ];
 
-export default function MyReviewsScreen() {
+export default function MyNotificationScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (

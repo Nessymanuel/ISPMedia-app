@@ -2,7 +2,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import DashboardScreen from "../screens/DashboardScreen";
 import MyUploadsScreen from "../screens/MyUploadsScreen";
-import MyReviewsScreen from "../screens/MyReviewsScreen";
+import MyReviewsScreen from "../screens/MyNotificationScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import RadioScreen from "src/screens/RadioScreen";
@@ -65,12 +65,12 @@ export default function DashboardTabs() {
 />
       
       <Tab.Screen
-        name="Reviews"
+        name="Notification"
         component={MyReviewsScreen}
         options={{
-          tabBarLabel: "Críticas",
+          tabBarLabel: "Notificações",
           tabBarIcon: ({ color }) => (
-            <Ionicons name="star" size={20} color={color} />
+            <Ionicons name="notifications" size={20} color={color} />
           ),
         }}
       />

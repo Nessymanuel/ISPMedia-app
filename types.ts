@@ -5,7 +5,7 @@ export type RootStackParamList = {
     EditProfile: undefined;
     MyUploads: undefined;
     MyPlaylists: undefined;
-    MyReviews: undefined;
+    MyNotification: undefined;
     ContentDetail: { id: string };
     Dashboard: undefined;
     ArtistList: undefined;

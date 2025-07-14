@@ -111,8 +111,8 @@ export default function DashboardScreen() {
   const filteredMedia = selectedType === "Músicas"
     ? musicas
     : selectedType === "Vídeos"
-    ? videos
-    : [];
+      ? videos
+      : [];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -315,5 +315,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#4f46e5",
     padding: 8,
     borderRadius: 20,
+  },
+  artistMeta: {
+    fontSize: 11,
+    color: "#666",
+    textAlign: "center",
+  },
+  albumMeta: {
+    fontSize: 11,
+    color: "#666",
+    textAlign: "center",
   },
 });
