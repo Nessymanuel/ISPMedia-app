@@ -1,7 +1,6 @@
 {
   "expo": {
     "name": "ISPMediaApp",
-    "slug": "ISPMediaApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logoupdate.png",

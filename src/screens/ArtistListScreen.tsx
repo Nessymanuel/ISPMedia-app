@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Image, P
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../types"; // <- importa teu tipo de rotas
+import { RootStackParamList } from "../../types"; // <- importa teu as rotas
 
 const genres = ["Todos", "Pop", "Jazz", "Rock", "Hip-Hop", "Kuduro"];
 

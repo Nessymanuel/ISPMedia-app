@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, ScrollView } from "react-native";
+import {
+  View, Text, Image, TouchableOpacity, StyleSheet, Alert, ScrollView
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+
+// Altere aqui para o IP real da sua máquina ou use ENV se preferir
+const BASE_URL = process.env.API_BASE_URL
 
 type UserData = {
   name: string;
   email: string;
   phone: string;
+  fotografia: string;
   createdAt?: string;
 };
 
@@ -23,7 +29,6 @@ export default function ProfileScreen() {
         const userData = await AsyncStorage.getItem("user");
         if (userData) {
           const parsed = JSON.parse(userData);
-         // Se não tiver data de cadastro, adiciona uma data simulada
           if (!parsed.createdAt) {
             parsed.createdAt = new Date().toISOString().split("T")[0];
             await AsyncStorage.setItem("user", JSON.stringify(parsed));
@@ -61,7 +66,6 @@ export default function ProfileScreen() {
     );
   }
 
-  // Estatísticas fictícias
   const stats = {
     uploads: 12,
     playlists: 4,
@@ -70,7 +74,6 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Banner */}
       <View style={styles.banner}>
         <Image
           source={require("../../assets/logoupdate.png")}
@@ -78,13 +81,13 @@ export default function ProfileScreen() {
         />
       </View>
 
-      {/* Avatar */}
+      {/* Avatar dinâmico */}
       <Image
-        source={require("../../assets/imgprofile.png")}
+        source={{ uri: `${BASE_URL}${user.fotografia}` }}
         style={styles.avatar}
+        onError={() => console.warn("Erro ao carregar imagem do perfil")}
       />
 
-      {/* Dados Pessoais */}
       <Text style={styles.name}>{user.name}</Text>
       <Text style={styles.email}>{user.email}</Text>
       <Text style={styles.phone}>
@@ -94,7 +97,6 @@ export default function ProfileScreen() {
         <MaterialIcons name="calendar-today" size={16} color="#555" /> Cadastro em: {user.createdAt}
       </Text>
 
-      {/* Estatísticas */}
       <View style={styles.statsContainer}>
         <View style={styles.statBox}>
           <Text style={styles.statNumber}>{stats.uploads}</Text>
@@ -110,7 +112,6 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Botão de Sair */}
       <TouchableOpacity onPress={handleLogout} style={styles.button}>
         <Text style={styles.buttonText}>Sair da Conta</Text>
       </TouchableOpacity>
@@ -130,13 +131,41 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     alignItems: "center",
   },
-  logo: { width: 140, height: 50, resizeMode: "contain", marginBottom: 4 },
-  appName: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  avatar: { width: 120, height: 120, borderRadius: 60, marginTop: -40, borderWidth: 3, borderColor: "#fff" },
-  name: { fontSize: 22, fontWeight: "bold", marginTop: 12 },
-  email: { fontSize: 16, color: "#555", marginBottom: 4 },
-  phone: { fontSize: 16, color: "#555", marginBottom: 4 },
-  registered: { fontSize: 14, color: "#777", marginBottom: 24 },
+  logo: {
+    width: 140,
+    height: 50,
+    resizeMode: "contain",
+    marginBottom: 4,
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginTop: -40,
+    borderWidth: 3,
+    borderColor: "#fff",
+    backgroundColor: "#ccc",
+  },
+  name: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginTop: 12,
+  },
+  email: {
+    fontSize: 16,
+    color: "#555",
+    marginBottom: 4,
+  },
+  phone: {
+    fontSize: 16,
+    color: "#555",
+    marginBottom: 4,
+  },
+  registered: {
+    fontSize: 14,
+    color: "#777",
+    marginBottom: 24,
+  },
   statsContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -151,15 +180,33 @@ const styles = StyleSheet.create({
     elevation: 2,
     marginBottom: 24,
   },
-  statBox: { alignItems: "center", flexDirection: "row", gap: 10, justifyContent: "center" },
-  statNumber: { fontSize: 18, fontWeight: "bold"},
-  statLabel: { fontSize: 18, color: "#777" },
+  statBox: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "center",
+  },
+  statNumber: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  statLabel: {
+    fontSize: 18,
+    color: "#777",
+  },
   button: {
     backgroundColor: "#e11d48",
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 6,
   },
-  buttonText: { color: "#fff", fontWeight: "bold" },
-  loading: { fontSize: 16, color: "#666", marginTop: 20 },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  loading: {
+    fontSize: 16,
+    color: "#666",
+    marginTop: 20,
+  },
 });

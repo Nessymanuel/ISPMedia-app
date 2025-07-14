@@ -11,4 +11,6 @@ export type RootStackParamList = {
     ArtistList: undefined;
     AlbumList: undefined;
     Radio: undefined;
+    ArtistDetail: { id: number };
+    AlbumDetail: { id: number };
 };

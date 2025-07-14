@@ -13,11 +13,13 @@ import { StatusBar, View } from "react-native";
 import ArtistListScreen from "src/screens/ArtistListScreen";
 import AlbumListScreen from "src/screens/AlbumListScreen";
 import RadioScreen from "src/screens/RadioScreen";
+import ArtistDetailScreen from "src/screens/ArtistDetailScreen";
+import AlbumDetailScreen from "src/screens/AlbumDetailScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  
+
   return (
     <>
       <StatusBar
@@ -45,6 +47,9 @@ export default function App() {
             <Stack.Screen name="ArtistList" component={ArtistListScreen} />
             <Stack.Screen name="AlbumList" component={AlbumListScreen} />
             <Stack.Screen name="Radio" component={RadioScreen} />
+            <Stack.Screen name="ArtistDetail" component={ArtistDetailScreen} options={{ title: "Detalhes do Artista" }} />
+            <Stack.Screen name="AlbumDetail" component={AlbumDetailScreen} options={{ title: "Detalhes do Álbum" }} />
+
 
           </Stack.Navigator>
         </NavigationContainer>

@@ -10,48 +10,42 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
+import axios from "axios";
+import { Audio } from "expo-av";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../types";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import { Audio } from "expo-av";
 
-const albums = [
-  { id: "1", title: "Álbum 1", cover: require("../../assets/cover.png") },
-  { id: "2", title: "Álbum 2", cover: require("../../assets/cover.png") },
-  { id: "3", title: "Álbum 3", cover: require("../../assets/cover.png") },
-  { id: "4", title: "Álbum 4", cover: require("../../assets/cover.png") },
-];
 
-const artists = [
-  { id: "1", name: "Artista A", avatar: require("../../assets/cover.png") },
-  { id: "2", name: "Artista B", avatar: require("../../assets/cover.png") },
-  { id: "3", name: "Artista C", avatar: require("../../assets/cover.png") },
-  { id: "4", name: "Artista D", avatar: require("../../assets/cover.png") },
-];
+const BASE_URL = process.env.API_BASE_URL;
 
 const mediaTypes = ["Músicas", "Vídeos", "Rádios"];
 
-const allMedia = [
-  { id: "1", type: "Músicas", title: "Música Relax", duration: "3 min", image: require("../../assets/cover.png") },
-  { id: "2", type: "Vídeos", title: "Video Aula", duration: "15 min", image: require("../../assets/cover.png") },
-  { id: "3", type: "Rádios", title: "Rádio News", duration: "Ao Vivo", image: require("../../assets/cover.png") },
-  { id: "4", type: "Músicas", title: "Música Pop", duration: "4 min", image: require("../../assets/cover.png") },
-  { id: "5", type: "Vídeos", title: "Video Tutorial", duration: "20 min", image: require("../../assets/cover.png") },
-];
-
 const radios = [
-  { id: "1", title: "Rádio Luanda", image: require("../../assets/cover.png"), streamUrl: "https://stream.zeno.fm/fw3rqz8vprhvv" },
-  { id: "2", title: "Rádio Nacional de Angola", image: require("../../assets/cover.png"), streamUrl: "https://stream.zeno.fm/0rbqpn3spxhvv" },
-  { id: "3", title: "LAC - Luanda Antena Comercial", image: require("../../assets/cover.png"), streamUrl: "https://stream.zeno.fm/t9kdfv4vprhvv" },
-  { id: "4", title: "Rádio Mais", image: require("../../assets/cover.png"), streamUrl: "https://stream.zeno.fm/yg92uwwvprhvv" },
+  {
+    id: "1",
+    title: "Rádio Luanda",
+    image: require("../../assets/cover.png"),
+    streamUrl: "https://stream.zeno.fm/fw3rqz8vprhvv",
+  },
+  {
+    id: "2",
+    title: "Rádio Nacional",
+    image: require("../../assets/cover.png"),
+    streamUrl: "https://stream.zeno.fm/0rbqpn3spxhvv",
+  },
 ];
 
 export default function DashboardScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [user, setUser] = useState<{ name: string; fotografia: string } | null>(null);
+  const [artists, setArtists] = useState<any[]>([]);
+  const [albums, setAlbums] = useState<any[]>([]);
+  const [musicas, setMusicas] = useState<any[]>([]);
+  const [videos, setVideos] = useState<any[]>([]);
   const [selectedType, setSelectedType] = useState("Músicas");
-  const [user, setUser] = useState<{ name: string } | null>(null);
 
   const soundRef = useRef<Audio.Sound | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -61,14 +55,21 @@ export default function DashboardScreen() {
   useEffect(() => {
     const loadUser = async () => {
       const userData = await AsyncStorage.getItem("user");
-      if (userData) setUser(JSON.parse(userData));
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        setUser({
+          name: parsed.username,
+          fotografia: parsed.fotografia,
+        });
+      }
     };
     loadUser();
-  }, []);
 
-  const filteredMedia = selectedType === "Todos"
-    ? allMedia
-    : allMedia.filter(item => item.type === selectedType);
+    axios.get(`${BASE_URL}/api/Artista`).then((res) => setArtists(res.data));
+    axios.get(`${BASE_URL}/api/Album`).then((res) => setAlbums(res.data));
+    axios.get(`${BASE_URL}/api/Musica`).then((res) => setMusicas(res.data));
+    axios.get(`${BASE_URL}/api/Video`).then((res) => setVideos(res.data));
+  }, []);
 
   const handlePlayPause = async (radio: typeof radios[0]) => {
     try {
@@ -107,15 +108,27 @@ export default function DashboardScreen() {
     }
   };
 
+  const filteredMedia = selectedType === "Músicas"
+    ? musicas
+    : selectedType === "Vídeos"
+    ? videos
+    : [];
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>Olá, {user?.name ?? "Usuário"} 👋</Text>
+        <Text style={styles.greeting}>Olá, {user?.name ?? "usuário"} 👋</Text>
         <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
-          <Image source={require("../../assets/imgprofile.png")} style={styles.avatar} />
+          {user?.fotografia ? (
+            <Image source={{ uri: `${BASE_URL}${user.fotografia}` }} style={styles.avatar} />
+          ) : (
+            <Image source={require("../../assets/imgprofile.png")} style={styles.avatar} />
+          )}
         </TouchableOpacity>
       </View>
 
+      {/* Artistas */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Artistas</Text>
         <TouchableOpacity onPress={() => navigation.navigate("ArtistList")}>
@@ -127,16 +140,20 @@ export default function DashboardScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         data={artists}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.artistList}
         renderItem={({ item }) => (
-          <View style={styles.artistCard}>
-            <Image source={item.avatar} style={styles.artistAvatar} />
-            <Text style={styles.artistName} numberOfLines={1}>{item.name}</Text>
-          </View>
+          <TouchableOpacity onPress={() => navigation.navigate("ArtistDetail", { id: item.id })}>
+            <View style={styles.artistCard}>
+              <Image source={{ uri: `${BASE_URL}${item.fotoArtista}` }} style={styles.artistAvatar} />
+              <Text style={styles.artistName} numberOfLines={1}>{item.nomeArtista}</Text>
+              <Text style={styles.artistMeta} numberOfLines={1}>{item.nomeUtilizador}</Text>
+            </View>
+          </TouchableOpacity>
         )}
       />
 
+      {/* Álbuns */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Álbuns</Text>
         <TouchableOpacity onPress={() => navigation.navigate("AlbumList")}>
@@ -148,22 +165,24 @@ export default function DashboardScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         data={albums}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.albumList}
         renderItem={({ item }) => (
-          <View style={styles.albumCard}>
-            <Image source={item.cover} style={styles.albumCover} />
-            <Text style={styles.albumTitle} numberOfLines={1}>{item.title}</Text>
-          </View>
+          <TouchableOpacity onPress={() => navigation.navigate("AlbumDetail", { id: item.id })}>
+            <View style={styles.albumCard}>
+              <Image source={{ uri: `${BASE_URL}${item.capaAlbum}` }} style={styles.albumCover} />
+              <Text style={styles.albumTitle} numberOfLines={1}>{item.tituloAlbum}</Text>
+              <Text style={styles.albumMeta}>{item.nomeEditor}</Text>
+            </View>
+          </TouchableOpacity>
         )}
       />
 
+      {/* Mídias */}
       <View style={{ height: 16 }} />
-
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Mídias</Text>
       </View>
-
 
       <View style={styles.filterRow}>
         {mediaTypes.map((type) => (
@@ -204,10 +223,10 @@ export default function DashboardScreen() {
         ) : (
           filteredMedia.map((item) => (
             <View key={item.id} style={styles.mediaItem}>
-              <Image source={item.image} style={styles.mediaImage} />
+              <Image source={{ uri: `${BASE_URL}${item.ficheiroPath}` }} style={styles.mediaImage} />
               <View style={styles.mediaInfo}>
-                <Text style={styles.mediaTitle}>{item.title}</Text>
-                <Text style={styles.mediaSubtitle}>{item.duration}</Text>
+                <Text style={styles.mediaTitle}>{item.titulo}</Text>
+                <Text style={styles.mediaSubtitle}>{item.formato}</Text>
               </View>
             </View>
           ))
@@ -216,6 +235,7 @@ export default function DashboardScreen() {
     </ScrollView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
