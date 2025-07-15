@@ -1,5 +1,13 @@
 import React, { useState, useRef } from "react";
-import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import { Audio } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -25,7 +33,7 @@ const radios = [
   {
     id: "4",
     title: "Rádio Mais",
-    image: require("../../assets/cover.png"),
+    image: require("../../assets/radiomais.png"),
     streamUrl: "https://stream.zeno.fm/yg92uwwvprhvv",
   },
 ];
@@ -40,7 +48,6 @@ export default function RadioScreen() {
     try {
       setLoadingId(radio.id);
 
-      // Caso seja a mesma rádio já carregada
       if (playingId === radio.id && soundRef.current) {
         const status = await soundRef.current.getStatusAsync();
         if (status.isLoaded) {
@@ -53,7 +60,6 @@ export default function RadioScreen() {
           }
         }
       } else {
-        // Parar a anterior, se existir
         if (soundRef.current) {
           await soundRef.current.unloadAsync();
           soundRef.current = null;
@@ -77,7 +83,6 @@ export default function RadioScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Cabeçalho */}
       <View style={styles.header}>
         <Ionicons name="radio-outline" size={24} color="#4f46e5" />
         <Text style={styles.headerTitle}>Rádios de Angola</Text>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -18,25 +18,8 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../types";
 import { Ionicons } from "@expo/vector-icons";
 
-
 const BASE_URL = process.env.API_BASE_URL;
-
 const mediaTypes = ["Músicas", "Vídeos", "Rádios"];
-
-const radios = [
-  {
-    id: "1",
-    title: "Rádio Luanda",
-    image: require("../../assets/cover.png"),
-    streamUrl: "https://stream.zeno.fm/fw3rqz8vprhvv",
-  },
-  {
-    id: "2",
-    title: "Rádio Nacional",
-    image: require("../../assets/cover.png"),
-    streamUrl: "https://stream.zeno.fm/0rbqpn3spxhvv",
-  },
-];
 
 export default function DashboardScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -45,6 +28,7 @@ export default function DashboardScreen() {
   const [albums, setAlbums] = useState<any[]>([]);
   const [musicas, setMusicas] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
+  const [radios, setRadios] = useState<any[]>([]);
   const [selectedType, setSelectedType] = useState("Músicas");
 
   const soundRef = useRef<Audio.Sound | null>(null);
@@ -69,13 +53,23 @@ export default function DashboardScreen() {
     axios.get(`${BASE_URL}/api/Album`).then((res) => setAlbums(res.data));
     axios.get(`${BASE_URL}/api/Musica`).then((res) => setMusicas(res.data));
     axios.get(`${BASE_URL}/api/Video`).then((res) => setVideos(res.data));
+    fetchRadios();
   }, []);
 
-  const handlePlayPause = async (radio: typeof radios[0]) => {
+  const fetchRadios = async () => {
     try {
-      setLoadingId(radio.id);
+      const res = await fetch("https://de1.api.radio-browser.info/json/stations/bycountry/Angola?limit30");
+      const data = await res.json();
+      setRadios(data);
+    } catch (err) {
+      console.log("Erro ao carregar rádios:", err);
+    }
+  };
 
-      if (playingId === radio.id && soundRef.current) {
+  const handlePlayPause = async (radio: any, id: string) => {
+    try {
+      setLoadingId(id);
+      if (playingId === id && soundRef.current) {
         const status = await soundRef.current.getStatusAsync();
         if (status.isLoaded) {
           if (status.isPlaying) {
@@ -91,14 +85,12 @@ export default function DashboardScreen() {
           await soundRef.current.unloadAsync();
           soundRef.current = null;
         }
-
         const { sound } = await Audio.Sound.createAsync(
-          { uri: radio.streamUrl },
+          { uri: radio.url_resolved },
           { shouldPlay: true }
         );
-
         soundRef.current = sound;
-        setPlayingId(radio.id);
+        setPlayingId(id);
         setIsPlaying(true);
       }
     } catch (err) {
@@ -108,24 +100,24 @@ export default function DashboardScreen() {
     }
   };
 
-  const filteredMedia = selectedType === "Músicas"
-    ? musicas
-    : selectedType === "Vídeos"
-      ? videos
-      : [];
+  const filteredMedia = selectedType === "Músicas" ? musicas : selectedType === "Vídeos" ? videos : [];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.greeting}>Olá, {user?.name ?? "usuário"} 👋</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
-          {user?.fotografia ? (
-            <Image source={{ uri: `${BASE_URL}${user.fotografia}` }} style={styles.avatar} />
-          ) : (
-            <Image source={require("../../assets/imgprofile.png")} style={styles.avatar} />
-          )}
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <TouchableOpacity onPress={() => navigation.navigate("Notifications")}>
+            <Ionicons name="notifications-outline" size={24} color="#4f46e5" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
+            {user?.fotografia ? (
+              <Image source={{ uri: `${BASE_URL}${user.fotografia}` }} style={styles.avatar} />
+            ) : (
+              <Image source={require("../../assets/imgprofile.png")} style={styles.avatar} />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Artistas */}
@@ -138,16 +130,16 @@ export default function DashboardScreen() {
 
       <FlatList
         horizontal
-        showsHorizontalScrollIndicator={false}
-        data={artists}
+        data={artists.slice(0, 5)}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.artistList}
+        showsHorizontalScrollIndicator={false}
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => navigation.navigate("ArtistDetail", { id: item.id })}>
             <View style={styles.artistCard}>
               <Image source={{ uri: `${BASE_URL}${item.fotoArtista}` }} style={styles.artistAvatar} />
-              <Text style={styles.artistName} numberOfLines={1}>{item.nomeArtista}</Text>
-              <Text style={styles.artistMeta} numberOfLines={1}>{item.nomeUtilizador}</Text>
+              <Text style={styles.artistName}>{item.nomeArtista}</Text>
+              <Text style={styles.artistMeta}>{item.nomeUtilizador}</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -163,23 +155,64 @@ export default function DashboardScreen() {
 
       <FlatList
         horizontal
-        showsHorizontalScrollIndicator={false}
-        data={albums}
+        data={albums.slice(0, 5)}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.albumList}
+        showsHorizontalScrollIndicator={false}
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => navigation.navigate("AlbumDetail", { id: item.id })}>
             <View style={styles.albumCard}>
               <Image source={{ uri: `${BASE_URL}${item.capaAlbum}` }} style={styles.albumCover} />
-              <Text style={styles.albumTitle} numberOfLines={1}>{item.tituloAlbum}</Text>
+              <Text style={styles.albumTitle}>{item.tituloAlbum}</Text>
               <Text style={styles.albumMeta}>{item.nomeEditor}</Text>
             </View>
           </TouchableOpacity>
         )}
       />
 
-      {/* Mídias */}
-      <View style={{ height: 16 }} />
+
+      {/* Rádios */}
+
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Rádios</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("RadioList")}>
+          <Text style={styles.seeAll}>Ver Todos</Text>
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
+        horizontal
+        data={radios.slice(0, 5)}
+        keyExtractor={(item, index) => `${item.name}-${index}`}
+        contentContainerStyle={styles.albumList}
+        showsHorizontalScrollIndicator={false}
+        renderItem={({ item, index }) => {
+          const id = `${item.name}-${index}`;
+          const isCurrent = playingId === id;
+          const isLoading = loadingId === id;
+
+          return (
+            <View style={styles.albumCard}>
+              <Image
+                source={item.favicon ? { uri: item.favicon } : require("../../assets/cover.png")}
+                style={styles.albumCover}
+              />
+              <Text style={styles.albumTitle} numberOfLines={1}>{item.name}</Text>
+              <TouchableOpacity style={styles.playButton} onPress={() => handlePlayPause(item, id)}>
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name={isCurrent && isPlaying ? "pause" : "play"} size={12} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </View>
+          );
+        }}
+      />
+
+     
+
+      {/* Filtro de mídias */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Mídias</Text>
       </View>
@@ -198,51 +231,36 @@ export default function DashboardScreen() {
         ))}
       </View>
 
-      <View style={styles.mediaList}>
-        {selectedType === "Rádios" ? (
-          radios.map((radio) => {
-            const isCurrent = playingId === radio.id;
-            const isLoading = loadingId === radio.id;
-
-            return (
-              <View key={radio.id} style={styles.radioItem}>
-                <Image source={radio.image} style={styles.mediaImage} />
-                <View style={styles.radioInfo}>
-                  <Text style={styles.mediaTitle}>{radio.title}</Text>
-                  <TouchableOpacity style={styles.playButton} onPress={() => handlePlayPause(radio)}>
-                    {isLoading ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <Ionicons name={isCurrent && isPlaying ? "pause" : "play"} size={20} color="#fff" />
-                    )}
-                  </TouchableOpacity>
-                </View>
+      {
+        selectedType !== "Rádios" && (
+          <FlatList
+            data={filteredMedia}
+            horizontal
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.albumList}
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <View style={styles.musicCard}>
+                <Image source={{ uri: `${BASE_URL}${item.capaPath ?? item.ficheiroPath}` }} style={styles.albumCover} />
+                <Text style={styles.albumTitle} numberOfLines={1}>{item.titulo}</Text>
+                <TouchableOpacity style={styles.downloadButton}>
+                  <Ionicons name="download-outline" size={18} color="#fff" />
+                </TouchableOpacity>
               </View>
-            );
-          })
-        ) : (
-          filteredMedia.map((item) => (
-            <View key={item.id} style={styles.mediaItem}>
-              <Image source={{ uri: `${BASE_URL}${item.ficheiroPath}` }} style={styles.mediaImage} />
-              <View style={styles.mediaInfo}>
-                <Text style={styles.mediaTitle}>{item.titulo}</Text>
-                <Text style={styles.mediaSubtitle}>{item.formato}</Text>
-              </View>
-            </View>
-          ))
-        )}
-      </View>
+            )}
+          />
+        )
+      }
     </ScrollView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 30,
     backgroundColor: "#fff",
     alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 56 : 32
+    paddingTop: Platform.OS === "ios" ? 56 : 32,
   },
   header: {
     width: "90%",
@@ -258,10 +276,45 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginTop: 24,
     marginBottom: 8,
   },
   sectionTitle: { fontSize: 16, fontWeight: "bold" },
   seeAll: { fontSize: 12, color: "#4f46e5" },
+  artistList: { paddingLeft: 20, marginBottom: 20 },
+  albumList: { paddingLeft: 20, marginBottom: 20 },
+  artistCard: { alignItems: "flex-start", marginRight: 16, width: 80 },
+  artistAvatar: { width: 70, height: 70, borderRadius: 35, marginBottom: 4 },
+  artistName: { fontSize: 12, color: "#333", textAlign: "center" },
+  artistMeta: { fontSize: 11, color: "#666", textAlign: "center" },
+  albumCard: {
+    alignItems: "flex-start",
+    marginRight: 16,
+    width: 80,
+  },
+  albumCover: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  albumTitle: { fontSize: 12, color: "#333", textAlign: "center" },
+  albumMeta: { fontSize: 11, color: "#666", textAlign: "center" },
+  playButton: {
+    position: "absolute",
+    bottom: 24,
+    right: 8,
+    backgroundColor: "#4f46e5",
+    padding: 6,
+    borderRadius: 20,
+    zIndex: 5,
+  },
+  downloadButton: {
+    marginTop: 6,
+    backgroundColor: "#4f46e5",
+    padding: 6,
+    borderRadius: 20,
+  },
   filterRow: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -277,53 +330,13 @@ const styles = StyleSheet.create({
   filterButtonActive: { backgroundColor: "#4f46e5" },
   filterText: { fontSize: 12, color: "#333" },
   filterTextActive: { color: "#fff" },
-  mediaList: { width: "90%" },
-  mediaItem: {
-    flexDirection: "row",
-    backgroundColor: "#f9f9f9",
-    borderRadius: 8,
-    marginBottom: 12,
-    overflow: "hidden",
-  },
-  mediaImage: { width: 80, height: 80, borderRadius: 8 },
-  mediaInfo: { padding: 12, justifyContent: "center" },
-  mediaTitle: { fontSize: 14, fontWeight: "bold" },
-  mediaSubtitle: { fontSize: 12, color: "#555" },
-  albumList: { paddingHorizontal: 16 },
-  albumCard: { alignItems: "center", marginRight: 16, width: 80 },
-  albumCover: { width: 70, height: 70, borderRadius: 8, marginBottom: 4 },
-  albumTitle: { fontSize: 12, color: "#333", textAlign: "center" },
-  artistList: { paddingHorizontal: 16, marginBottom: 20 },
-  artistCard: { alignItems: "center", marginRight: 16, width: 80 },
-  artistAvatar: { width: 70, height: 70, borderRadius: 35, marginBottom: 4 },
-  artistName: { fontSize: 12, color: "#333", textAlign: "center" },
-  radioItem: {
-    flexDirection: "row",
-    alignItems: "center",
+  musicCard: {
+    width: 120,
+    marginRight: 12,
     backgroundColor: "#f3f3f3",
-    marginBottom: 14,
-    padding: 12,
-    borderRadius: 10,
-  },
-  radioInfo: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  playButton: {
-    backgroundColor: "#4f46e5",
+    borderRadius: 12,
     padding: 8,
-    borderRadius: 20,
-  },
-  artistMeta: {
-    fontSize: 11,
-    color: "#666",
-    textAlign: "center",
-  },
-  albumMeta: {
-    fontSize: 11,
-    color: "#666",
-    textAlign: "center",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

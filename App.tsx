@@ -16,6 +16,9 @@ import RadioScreen from "src/screens/RadioScreen";
 import ArtistDetailScreen from "src/screens/ArtistDetailScreen";
 import AlbumDetailScreen from "src/screens/AlbumDetailScreen";
 import MyNotificationScreen from "./src/screens/MyNotificationScreen";
+import NotificationsScreen from "./src/screens/NotificationsScreen";
+import RadioListScreen from "src/screens/RadioListScreen";
+
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -48,9 +51,10 @@ export default function App() {
             <Stack.Screen name="ArtistList" component={ArtistListScreen} />
             <Stack.Screen name="AlbumList" component={AlbumListScreen} />
             <Stack.Screen name="Radio" component={RadioScreen} />
+            <Stack.Screen name="RadioList" component={RadioListScreen} />
             <Stack.Screen name="ArtistDetail" component={ArtistDetailScreen} options={{ title: "Detalhes do Artista" }} />
             <Stack.Screen name="AlbumDetail" component={AlbumDetailScreen} options={{ title: "Detalhes do Álbum" }} />
-
+            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
 
           </Stack.Navigator>
         </NavigationContainer>

@@ -84,6 +84,8 @@ export default function DashboardTabs() {
           ),
         }}
       />
+
+      
     </Tab.Navigator>
   );
 }
