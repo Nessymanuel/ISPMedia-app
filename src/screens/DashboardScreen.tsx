@@ -19,17 +19,17 @@ import { RootStackParamList } from "../../types";
 import { Ionicons } from "@expo/vector-icons";
 
 const BASE_URL = process.env.API_BASE_URL;
-const mediaTypes = ["Músicas", "Vídeos", "Rádios"];
+const mediaTypes = ["Todos", "Músicas", "Vídeos"];
 
 export default function DashboardScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [user, setUser] = useState<{ name: string; fotografia: string } | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
   const [artists, setArtists] = useState<any[]>([]);
   const [albums, setAlbums] = useState<any[]>([]);
-  const [musicas, setMusicas] = useState<any[]>([]);
-  const [videos, setVideos] = useState<any[]>([]);
   const [radios, setRadios] = useState<any[]>([]);
-  const [selectedType, setSelectedType] = useState("Músicas");
+  const [conteudos, setConteudos] = useState<any[]>([]);
+  const [selectedType, setSelectedType] = useState<"Todos" | "Músicas" | "Vídeos">("Todos");
 
   const soundRef = useRef<Audio.Sound | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -41,24 +41,40 @@ export default function DashboardScreen() {
       const userData = await AsyncStorage.getItem("user");
       if (userData) {
         const parsed = JSON.parse(userData);
-        setUser({
-          name: parsed.username,
-          fotografia: parsed.fotografia,
-        });
+        setUser({ name: parsed.username, fotografia: parsed.fotografia });
+        setUserId(parsed.id);
       }
     };
     loadUser();
 
     axios.get(`${BASE_URL}/api/Artista`).then((res) => setArtists(res.data));
     axios.get(`${BASE_URL}/api/Album`).then((res) => setAlbums(res.data));
-    axios.get(`${BASE_URL}/api/Musica`).then((res) => setMusicas(res.data));
-    axios.get(`${BASE_URL}/api/Video`).then((res) => setVideos(res.data));
     fetchRadios();
   }, []);
 
+  useEffect(() => {
+    if (!userId) return;
+    const fetchConteudos = async () => {
+      try {
+        const [musicas, videos] = await Promise.all([
+          axios.get(`${BASE_URL}/api/Musica/emalta/${userId}`),
+          axios.get(`${BASE_URL}/api/Video/emalta/${userId}`),
+        ]);
+        const all = [
+          ...musicas.data.map((m: any) => ({ ...m, tipo: "Músicas" })),
+          ...videos.data.map((v: any) => ({ ...v, tipo: "Vídeos" })),
+        ];
+        setConteudos(all);
+      } catch (err) {
+        console.error("Erro ao buscar conteúdos:", err);
+      }
+    };
+    fetchConteudos();
+  }, [userId]);
+
   const fetchRadios = async () => {
     try {
-      const res = await fetch("https://de1.api.radio-browser.info/json/stations/bycountry/Angola?limit30");
+      const res = await fetch("https://de1.api.radio-browser.info/json/stations/bycountry/Angola?limit=30");
       const data = await res.json();
       setRadios(data);
     } catch (err) {
@@ -83,7 +99,6 @@ export default function DashboardScreen() {
       } else {
         if (soundRef.current) {
           await soundRef.current.unloadAsync();
-          soundRef.current = null;
         }
         const { sound } = await Audio.Sound.createAsync(
           { uri: radio.url_resolved },
@@ -100,10 +115,13 @@ export default function DashboardScreen() {
     }
   };
 
-  const filteredMedia = selectedType === "Músicas" ? musicas : selectedType === "Vídeos" ? videos : [];
+  const filtered = conteudos.filter(
+    (c) => selectedType === "Todos" || c.tipo === selectedType
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {/* Cabeçalho */}
       <View style={styles.header}>
         <Text style={styles.greeting}>Olá, {user?.name ?? "usuário"} 👋</Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
@@ -127,7 +145,6 @@ export default function DashboardScreen() {
           <Text style={styles.seeAll}>Ver Todos</Text>
         </TouchableOpacity>
       </View>
-
       <FlatList
         horizontal
         data={artists.slice(0, 5)}
@@ -152,7 +169,6 @@ export default function DashboardScreen() {
           <Text style={styles.seeAll}>Ver Todos</Text>
         </TouchableOpacity>
       </View>
-
       <FlatList
         horizontal
         data={albums.slice(0, 5)}
@@ -170,16 +186,13 @@ export default function DashboardScreen() {
         )}
       />
 
-
       {/* Rádios */}
-
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Rádios</Text>
         <TouchableOpacity onPress={() => navigation.navigate("RadioList")}>
           <Text style={styles.seeAll}>Ver Todos</Text>
         </TouchableOpacity>
       </View>
-
       <FlatList
         horizontal
         data={radios.slice(0, 5)}
@@ -210,19 +223,16 @@ export default function DashboardScreen() {
         }}
       />
 
-     
-
       {/* Filtro de mídias */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Mídias</Text>
       </View>
-
       <View style={styles.filterRow}>
         {mediaTypes.map((type) => (
           <TouchableOpacity
             key={type}
             style={[styles.filterButton, selectedType === type && styles.filterButtonActive]}
-            onPress={() => setSelectedType(type)}
+            onPress={() => setSelectedType(type as any)}
           >
             <Text style={[styles.filterText, selectedType === type && styles.filterTextActive]}>
               {type}
@@ -231,26 +241,29 @@ export default function DashboardScreen() {
         ))}
       </View>
 
-      {
-        selectedType !== "Rádios" && (
-          <FlatList
-            data={filteredMedia}
-            horizontal
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={styles.albumList}
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <View style={styles.musicCard}>
-                <Image source={{ uri: `${BASE_URL}${item.capaPath ?? item.ficheiroPath}` }} style={styles.albumCover} />
-                <Text style={styles.albumTitle} numberOfLines={1}>{item.titulo}</Text>
-                <TouchableOpacity style={styles.downloadButton}>
-                  <Ionicons name="download-outline" size={18} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            )}
+      {/* Listagem de Músicas e Vídeos */}
+      {filtered.map((item, index) => (
+        <TouchableOpacity
+          key={index}
+          style={styles.mediaItem}
+          onPress={() =>
+            item.tipo === "Vídeos"
+              ? navigation.navigate("VideoPlayer", { video: item })
+              : navigation.navigate("MusicPlayer", { music: item })
+          }
+        >
+          <Image
+            source={{ uri: `${BASE_URL}${item.capaMusica ?? item.capaVideo}` }}
+            style={styles.mediaImage}
           />
-        )
-      }
+          <View style={styles.mediaInfo}>
+            <Text style={styles.mediaTitle}>{item.tituloMusica ?? item.tituloVideo}</Text>
+            <Text style={styles.mediaArtist}>{item.nomeArtista}</Text>
+          </View>
+        </TouchableOpacity>
+      ))}
+
+
     </ScrollView>
   );
 }
@@ -287,17 +300,8 @@ const styles = StyleSheet.create({
   artistAvatar: { width: 70, height: 70, borderRadius: 35, marginBottom: 4 },
   artistName: { fontSize: 12, color: "#333", textAlign: "center" },
   artistMeta: { fontSize: 11, color: "#666", textAlign: "center" },
-  albumCard: {
-    alignItems: "flex-start",
-    marginRight: 16,
-    width: 80,
-  },
-  albumCover: {
-    width: 70,
-    height: 70,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
+  albumCard: { alignItems: "flex-start", marginRight: 16, width: 80 },
+  albumCover: { width: 70, height: 70, borderRadius: 8, marginBottom: 4 },
   albumTitle: { fontSize: 12, color: "#333", textAlign: "center" },
   albumMeta: { fontSize: 11, color: "#666", textAlign: "center" },
   playButton: {
@@ -308,12 +312,6 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 20,
     zIndex: 5,
-  },
-  downloadButton: {
-    marginTop: 6,
-    backgroundColor: "#4f46e5",
-    padding: 6,
-    borderRadius: 20,
   },
   filterRow: {
     flexDirection: "row",
@@ -330,13 +328,22 @@ const styles = StyleSheet.create({
   filterButtonActive: { backgroundColor: "#4f46e5" },
   filterText: { fontSize: 12, color: "#333" },
   filterTextActive: { color: "#fff" },
-  musicCard: {
-    width: 120,
-    marginRight: 12,
-    backgroundColor: "#f3f3f3",
+  mediaItem: {
+    flexDirection: "row",
+    backgroundColor: "#f5f5f5",
     borderRadius: 12,
-    padding: 8,
+    marginBottom: 12,
+    padding: 10,
     alignItems: "center",
-    justifyContent: "center",
+    width: "90%",
   },
+  mediaImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    marginRight: 12,
+  },
+  mediaInfo: { flex: 1 },
+  mediaTitle: { fontSize: 16, fontWeight: "bold", color: "#111" },
+  mediaArtist: { fontSize: 14, color: "#555", marginTop: 2 },
 });

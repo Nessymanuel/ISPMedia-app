@@ -131,7 +131,10 @@ export default function RadioListScreen() {
           style={styles.searchInput}
         />
         <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.filterButton}>
-          <FunnelIcon size={18} color="#fff" />
+       
+
+      {/*<FunnelIcon size={18} color="#fff" */}
+          
         </TouchableOpacity>
       </View>
 

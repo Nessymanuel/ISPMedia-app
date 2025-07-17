@@ -2,10 +2,12 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import DashboardScreen from "../screens/DashboardScreen";
 import MyUploadsScreen from "../screens/MyUploadsScreen";
-import MyReviewsScreen from "../screens/MyNotificationScreen";
 import ProfileScreen from "../screens/ProfileScreen";
-import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
 import RadioScreen from "src/screens/RadioScreen";
+import LibraryScreen from "src/screens/LibraryScreen";// Novo componente para biblioteca (crie se não existir)
+import { View } from "react-native";
+
 
 const Tab = createBottomTabNavigator();
 
@@ -16,9 +18,9 @@ export default function DashboardTabs() {
         headerShown: false,
         tabBarActiveTintColor: "#4f46e5",
         tabBarInactiveTintColor: "#aaa",
-        tabBarStyle: { 
-          paddingVertical: 6, 
-          height: 60 
+        tabBarStyle: {
+          paddingVertical: 6,
+          height: 60,
         },
         tabBarLabelStyle: { fontSize: 12 },
       }}
@@ -44,36 +46,34 @@ export default function DashboardTabs() {
         }}
       />
 
-      
-<Tab.Screen
-  name="Radio"
-  component={RadioScreen}
-  options={{
-    tabBarLabel: "Rádio",
-    tabBarIcon: ({ color }) => (
-      <Ionicons name="radio" size={22} color={color} />
-    ),
-    tabBarLabelStyle: { fontSize: 12 },
-    tabBarIconStyle: {
-      backgroundColor: "#a78bfa", // lilás
-      padding: 8,
-      borderRadius: 50,
-    },
-    tabBarActiveTintColor: "#fff",
-    tabBarInactiveTintColor: "#eee",
-  }}
-/>
-      
       <Tab.Screen
-        name="Notification"
-        component={MyReviewsScreen}
+        name="Radio"
+        component={RadioScreen}
         options={{
-          tabBarLabel: "Notificações",
+          tabBarLabel: "Rádio",
+          tabBarIcon: ({ focused }) => (
+            <View style={{backgroundColor: "#a78bfa", padding: 10,borderRadius: 30,}}>
+              <Ionicons name="radio" size={22} color="#fff" />
+            </View>
+          ),
+          tabBarLabelStyle: {
+            fontSize: 12,
+            color: "#a78bfa",
+          },
+        }}
+      />
+
+      <Tab.Screen
+        name="Library"
+        component={LibraryScreen}
+        options={{
+          tabBarLabel: "Biblioteca",
           tabBarIcon: ({ color }) => (
-            <Ionicons name="notifications" size={20} color={color} />
+            <MaterialIcons name="library-books" size={22} color={color} />
           ),
         }}
       />
+
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
@@ -84,8 +84,6 @@ export default function DashboardTabs() {
           ),
         }}
       />
-
-      
     </Tab.Navigator>
   );
 }

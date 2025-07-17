@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ISPMediaApp",
+    "name": "",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logoupdate.png",
@@ -25,7 +25,15 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Permitir uso do microfone",
+          "cameraPermission": "Permitir uso da câmera"
+        }
+      ],
+      "expo-video"
     ]
   }
 }

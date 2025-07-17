@@ -1,86 +1,117 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Image, Platform } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  Platform,
+  ActivityIndicator,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../types";
+import axios from "axios";
 
-const genres = ["Todos", "Pop", "Jazz", "Rock", "Hip-Hop"];
-
-const mockAlbums = [
-  { id: "1", album: "Álbum A", artist: "Artista A", genre: "Pop", image: require("../../assets/cover.png") },
-  { id: "2", album: "Álbum B", artist: "Artista B", genre: "Jazz", image: require("../../assets/cover.png") },
-  { id: "3", album: "Álbum C", artist: "Artista C", genre: "Rock", image: require("../../assets/cover.png") },
-];
+const BASE_URL = process.env.API_BASE_URL;
+const genres = ["Todos", "Pop", "Jazz", "Rock", "Hip-Hop", "Kuduro", "Kizomba", "Semba"];
 
 export default function AlbumListScreen() {
   const [search, setSearch] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("Todos");
+  const [albums, setAlbums] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const filteredAlbums = mockAlbums.filter(
-    album =>
-      (selectedGenre === "Todos" || album.genre === selectedGenre) &&
-      album.album.toLowerCase().includes(search.toLowerCase())
+  useEffect(() => {
+    axios
+      .get(`${BASE_URL}/api/Album`)
+      .then((res) => setAlbums(res.data))
+      .catch((err) => console.error("Erro ao buscar álbuns:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filteredAlbums = albums.filter(
+    (album) =>
+      (selectedGenre === "Todos" || album.generoMusical === selectedGenre) &&
+      album.tituloAlbum.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#4f46e5" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       {/* Cabeçalho */}
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => navigation.navigate("Dashboard")}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={26} color="#333" />
         </TouchableOpacity>
-
         <Text style={styles.title}>Álbuns</Text>
-
         <TouchableOpacity onPress={() => alert("Adicionar Álbum")}>
           <Ionicons name="add-circle-outline" size={28} color="#4f46e5" />
         </TouchableOpacity>
       </View>
 
-      {/* Campo de Pesquisa */}
+      {/* Campo de pesquisa */}
       <TextInput
-        placeholder="Pesquisar álbum ou artista..."
+        placeholder="Pesquisar álbum..."
         value={search}
         onChangeText={setSearch}
         style={styles.searchInput}
       />
 
-      {/* Filtro de Gênero */}
+      {/* Gêneros */}
       <View style={styles.genreRow}>
-        {genres.map(genre => (
+        {genres.map((genre) => (
           <TouchableOpacity
             key={genre}
             style={[
               styles.genreButton,
-              selectedGenre === genre && styles.genreButtonActive
+              selectedGenre === genre && styles.genreButtonActive,
             ]}
             onPress={() => setSelectedGenre(genre)}
           >
-            <Text style={[
-              styles.genreText,
-              selectedGenre === genre && styles.genreTextActive
-            ]}>
+            <Text
+              style={[
+                styles.genreText,
+                selectedGenre === genre && styles.genreTextActive,
+              ]}
+            >
               {genre}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Lista de Álbuns */}
+      {/* Lista de álbuns */}
       <FlatList
         data={filteredAlbums}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{ paddingBottom: 24 }}
         renderItem={({ item }) => (
-          <View style={styles.albumItem}>
-            <Image source={item.image} style={styles.albumImage} />
+          <TouchableOpacity
+            onPress={() => navigation.navigate("AlbumDetail", { id: item.id })}
+            style={styles.albumCard}
+          >
+            <Image
+              source={{ uri: `${BASE_URL}${item.capaAlbum}` }}
+              style={styles.albumCover}
+            />
             <View>
-              <Text style={styles.albumTitle}>{item.album}</Text>
-              <Text style={styles.albumArtist}>{item.artist}</Text>
+              <Text style={styles.albumTitle}>{item.tituloAlbum}</Text>
+              <Text style={styles.albumMeta}>{item.nomeArtista}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
       />
     </View>
@@ -93,6 +124,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingHorizontal: 16,
     paddingTop: Platform.OS === "ios" ? 60 : 40,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerRow: {
     flexDirection: "row",
@@ -114,8 +150,8 @@ const styles = StyleSheet.create({
   },
   genreRow: {
     flexDirection: "row",
-    marginBottom: 12,
     flexWrap: "wrap",
+    marginBottom: 12,
   },
   genreButton: {
     padding: 8,
@@ -133,24 +169,27 @@ const styles = StyleSheet.create({
   genreTextActive: {
     color: "#fff",
   },
-  albumItem: {
+  albumCard: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    padding: 8,
+    backgroundColor: "#f3f3f3",
+    borderRadius: 12,
+    padding: 10,
   },
-  albumImage: {
+  albumCover: {
     width: 60,
     height: 60,
     borderRadius: 8,
     marginRight: 12,
+    backgroundColor: "#ccc",
   },
   albumTitle: {
     fontWeight: "bold",
+    fontSize: 14,
   },
-  albumArtist: {
-    color: "#555",
+  albumMeta: {
+    fontSize: 12,
+    color: "#666",
   },
 });

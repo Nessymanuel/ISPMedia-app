@@ -1,86 +1,119 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Image, Platform } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  Platform,
+  ActivityIndicator,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../types"; // <- importa teu as rotas
+import { RootStackParamList } from "../../types";
+import axios from "axios";
 
-const genres = ["Todos", "Pop", "Jazz", "Rock", "Hip-Hop", "Kuduro"];
-
-const mockSongs = [
-  { id: "1", artist: "Artista A", title: "Música A", genre: "Pop", image: require("../../assets/cover.png") },
-  { id: "2", artist: "Artista B", title: "Música B", genre: "Jazz", image: require("../../assets/cover.png") },
-  { id: "3", artist: "Artista C", title: "Música C", genre: "Rock", image: require("../../assets/cover.png") },
-];
+const BASE_URL = process.env.API_BASE_URL;
+const genres = ["Todos", "Pop", "Jazz", "Rock", "Hip-Hop", "Kuduro" , "Kizomba" , "Semba"];
 
 export default function ArtistListScreen() {
   const [search, setSearch] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("Todos");
+  const [artists, setArtists] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const filteredSongs = mockSongs.filter(
-    song =>
-      (selectedGenre === "Todos" || song.genre === selectedGenre) &&
-      song.title.toLowerCase().includes(search.toLowerCase())
+  useEffect(() => {
+    axios
+      .get(`${BASE_URL}/api/Artista`)
+      .then((res) => setArtists(res.data))
+      .catch((err) => console.error("Erro ao buscar artistas:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filteredArtists = artists.filter(
+    (artist) =>
+      (selectedGenre === "Todos" || artist.generoMusical === selectedGenre) &&
+      artist.nomeArtista.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#4f46e5" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* Cabeçalho com espaçamento */}
+      {/* Cabeçalho */}
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => navigation.navigate("Dashboard")}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={26} color="#333" />
         </TouchableOpacity>
-
-        <Text style={styles.title}>Artistas e Músicas</Text>
-
+        <Text style={styles.title}>Artistas</Text>
         <TouchableOpacity onPress={() => alert("Adicionar Artista")}>
           <Ionicons name="add-circle-outline" size={28} color="#4f46e5" />
         </TouchableOpacity>
       </View>
 
-      {/* Input de pesquisa */}
+      {/* Campo de pesquisa */}
       <TextInput
-        placeholder="Pesquisar música ou artista..."
+        placeholder="Pesquisar artista..."
         value={search}
         onChangeText={setSearch}
         style={styles.searchInput}
       />
 
-      {/* Filtro por gênero */}
+      {/* Gêneros */}
       <View style={styles.genreRow}>
-        {genres.map(genre => (
+        {genres.map((genre) => (
           <TouchableOpacity
             key={genre}
             style={[
               styles.genreButton,
-              selectedGenre === genre && styles.genreButtonActive
+              selectedGenre === genre && styles.genreButtonActive,
             ]}
             onPress={() => setSelectedGenre(genre)}
           >
-            <Text style={[
-              styles.genreText,
-              selectedGenre === genre && styles.genreTextActive
-            ]}>
+            <Text
+              style={[
+                styles.genreText,
+                selectedGenre === genre && styles.genreTextActive,
+              ]}
+            >
               {genre}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Lista de músicas */}
+      {/* Lista de artistas */}
       <FlatList
-        data={filteredSongs}
-        keyExtractor={(item) => item.id}
+        data={filteredArtists}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{ paddingBottom: 24 }}
         renderItem={({ item }) => (
-          <View style={styles.songItem}>
-            <Image source={item.image} style={styles.songImage} />
+          <TouchableOpacity
+            onPress={() => navigation.navigate("ArtistDetail", { id: item.id })}
+            style={styles.artistCard}
+          >
+            <Image
+            source={{ uri: `${BASE_URL}/${item.fotoArtista.replace(/^\/+/, "")}` }}
+
+            
+              style={styles.artistAvatar}
+            />
             <View>
-              <Text style={styles.songTitle}>{item.title}</Text>
-              <Text style={styles.songArtist}>{item.artist}</Text>
+              <Text style={styles.artistName}>{item.nomeArtista}</Text>
+              <Text style={styles.artistMeta}>{item.nomeUtilizador}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
       />
     </View>
@@ -92,7 +125,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 60 : 40, // espaço superior para iOS/Android
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerRow: {
     flexDirection: "row",
@@ -110,47 +148,49 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 8,
     padding: 10,
-    marginBottom: 12
+    marginBottom: 12,
   },
   genreRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     marginBottom: 12,
-    flexWrap: "wrap"
   },
   genreButton: {
     padding: 8,
     borderRadius: 20,
     backgroundColor: "#eee",
     marginRight: 8,
-    marginBottom: 8
+    marginBottom: 8,
   },
   genreButtonActive: {
-    backgroundColor: "#4f46e5"
+    backgroundColor: "#4f46e5",
   },
   genreText: {
-    fontSize: 12
+    fontSize: 12,
   },
   genreTextActive: {
-    color: "#fff"
+    color: "#fff",
   },
-  songItem: {
+  artistCard: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    padding: 8
+    backgroundColor: "#f3f3f3",
+    borderRadius: 12,
+    padding: 10,
   },
-  songImage: {
+  artistAvatar: {
     width: 60,
     height: 60,
-    borderRadius: 8,
-    marginRight: 12
+    borderRadius: 30,
+    marginRight: 12,
   },
-  songTitle: {
-    fontWeight: "bold"
+  artistName: {
+    fontWeight: "bold",
+    fontSize: 14,
   },
-  songArtist: {
-    color: "#555"
-  }
+  artistMeta: {
+    fontSize: 12,
+    color: "#666",
+  },
 });
