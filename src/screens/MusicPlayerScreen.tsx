@@ -16,7 +16,6 @@ import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-
 const BASE_URL = process.env.API_BASE_URL;
 
 export default function MusicPlayerScreen({ route }: any) {
@@ -24,45 +23,43 @@ export default function MusicPlayerScreen({ route }: any) {
   const { music } = route.params;
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0); // real
+  const [progress, setProgress] = useState(0);
   const [likes, setLikes] = useState(0);
   const [rating, setRating] = useState(4);
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<any[]>([]);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [position, setPosition] = useState(0); // em milissegundos
-  const [duration, setDuration] = useState(1); // evitar divisão por zero
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(1);
   const [userId, setUserId] = useState<number | null>(null);
   const [username, setUsername] = useState<string>("");
 
+ useEffect(() => {
+  const loadUser = async () => {
+    const userData = await AsyncStorage.getItem("user");
+    if (userData) {
+      const parsed = JSON.parse(userData);
+      setUserId(parsed.id);
+      setUsername(parsed.username);
+    }
+  };
 
-  useEffect(() => {
-    const loadUser = async () => {
-      const userData = await AsyncStorage.getItem("user");
-      if (userData) {
-        const parsed = JSON.parse(userData);
-        setUserId(parsed.id);
-        setUsername(parsed.username);
-      }
-    };
+  loadUser();
 
-    loadUser();
+  // Atualiza os comentários
+  axios.get(`${BASE_URL}/api/Critica/musica/${music.id}`).then((res) => {
+    setComments(res.data.map((c: any) => ({
+      username: c.nomeUtilizador,
+      text: c.comentario,
+      stars: c.pontuacao,
+    })));
+  });
 
-    axios.get(`${BASE_URL}/api/Critica/musica/${music.id}`).then((res) => {
-      setComments(
-        res.data.map((c: any) => ({
-          username: c.nomeUtilizador,
-          text: c.comentario,
-          stars: c.pontuacao,
-        }))
-      );
-    });
-
-    axios.get(`${BASE_URL}/api/Like/musica/${music.id}`).then((res) => {
-      setLikes(res.data.length);
-    });
-  }, []);
-
+  // Atualiza os likes
+  axios.get(`${BASE_URL}/api/Like/musica/${music.id}`).then((res) => {
+    setLikes(res.data.totalLikes);
+  });
+}, [music.id]); 
 
   const handlePlayPause = async () => {
     try {
@@ -73,15 +70,10 @@ export default function MusicPlayerScreen({ route }: any) {
 
         newSound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded && status.durationMillis) {
-
             setPosition(status.positionMillis);
             setDuration(status.durationMillis);
             setProgress(status.positionMillis / status.durationMillis);
             setIsPlaying(status.isPlaying);
-
-
-
-
           }
         });
 
@@ -111,7 +103,6 @@ export default function MusicPlayerScreen({ route }: any) {
         albumId: null,
         videoId: null,
       });
-
       setLikes((prev) => prev + 1);
     } catch (err) {
       console.error("Erro ao enviar like:", err);
@@ -131,13 +122,7 @@ export default function MusicPlayerScreen({ route }: any) {
         videoId: null,
       });
 
-      setComments([
-        ...comments,
-        { username: username, text: comment, stars: rating },
-      ]);
-
-
-   
+      setComments([...comments, { username, text: comment, stars: rating }]);
       setComment("");
     } catch (err) {
       console.error("Erro ao enviar crítica:", err);
@@ -146,32 +131,33 @@ export default function MusicPlayerScreen({ route }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Ionicons name="chevron-back" size={28} color="#333" />
-      </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-down" size={28} color="#fff" />
+          </TouchableOpacity>
 
-      <Text style={styles.headerTitle}>Música</Text>
+          <TouchableOpacity onPress={handleLike} style={styles.likeButton}>
+            <Ionicons name="heart" size={24} color="#f472b6" />
+            <Text style={styles.likeText}>{likes}</Text>
+          </TouchableOpacity>
+        </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.collectionTitle}>{music.nomeAlbum}</Text>
-
-        <Image source={{ uri: `${BASE_URL}${music.capaMusica}` }} style={styles.coverImage} />
-
-        <Text style={styles.songTitle}>{music.tituloMusica}</Text>
+        <Text style={styles.section}>Top Hits de Hoje</Text>
+        <Image source={{ uri: `${BASE_URL}${music.capaMusica}` }} style={styles.cover} />
+        <Text style={styles.title}>{music.tituloMusica}</Text>
         <Text style={styles.artist}>{music.nomeArtista}</Text>
 
         <Slider
-          style={{ width: "90%", height: 40 }}
+          style={{ width: "100%" }}
           minimumValue={0}
           maximumValue={duration}
           value={position}
           minimumTrackTintColor="#a855f7"
-          maximumTrackTintColor="#ddd"
-          thumbTintColor="#a855f7"
+          maximumTrackTintColor="#333"
+          thumbTintColor="#fff"
           onSlidingComplete={async (value) => {
-            if (sound) {
-              await sound.setPositionAsync(value);
-            }
+            if (sound) await sound.setPositionAsync(value);
           }}
         />
 
@@ -181,65 +167,58 @@ export default function MusicPlayerScreen({ route }: any) {
         </View>
 
         <View style={styles.controls}>
-          <Ionicons name="play-skip-back" size={28} color="#333" />
+          <Ionicons name="play-skip-back" size={28} color="#fff" />
           <TouchableOpacity onPress={handlePlayPause} style={styles.playButton}>
-            <Ionicons name={isPlaying ? "pause" : "play"} size={32} color="#fff" />
+            <Ionicons name={isPlaying ? "pause" : "play"} size={30} color="#fff" />
           </TouchableOpacity>
-          <Ionicons name="play-skip-forward" size={28} color="#333" />
+          <Ionicons name="play-skip-forward" size={28} color="#fff" />
         </View>
 
-        {/* Letra */}
-        <Text style={styles.lyricsTitle}>Letra</Text>
-        <Text style={styles.lyrics}>{music.letra || "Letra indisponível."}</Text>
+        <View style={styles.lyricsBox}>
+          <Text style={styles.lyricsHeader}>Letra</Text>
+          <Text style={styles.lyrics}>{music.letra || "Letra indisponível."}</Text>
+        </View>
 
-        {/* Curtidas */}
-        <TouchableOpacity onPress={handleLike} style={styles.likeButton}>
-          <Ionicons name="heart" size={20} color="#fff" />
-          <Text style={styles.likeText}>{likes} curtidas</Text>
-        </TouchableOpacity>
+        <View style={styles.commentArea}>
+          <Text style={styles.commentTitle}>Avaliar & Comentar</Text>
 
-        {/* Avaliação */}
-        <Text style={styles.sectionTitle}>Avaliar:</Text>
-        <View style={styles.ratingRow}>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <TouchableOpacity key={i} onPress={() => setRating(i)}>
-              <Ionicons
-                name="star"
-                size={24}
-                color={i <= rating ? "#facc15" : "#ccc"}
-              />
-            </TouchableOpacity>
+          <View style={styles.ratingRow}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <TouchableOpacity key={i} onPress={() => setRating(i)}>
+                <Ionicons name="star" size={20} color={i <= rating ? "#facc15" : "#444"} />
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TextInput
+            placeholder="Escreva um comentário..."
+            placeholderTextColor="#888"
+            value={comment}
+            onChangeText={setComment}
+            style={styles.input}
+          />
+
+          <TouchableOpacity onPress={handleSubmitComment} style={styles.sendButton}>
+            <Text style={styles.sendText}>Enviar</Text>
+          </TouchableOpacity>
+
+          {comments.map((c, index) => (
+            <View key={index} style={styles.commentBox}>
+              <Text style={styles.username}>{c.username}</Text>
+              <Text style={styles.commentText}>{c.text}</Text>
+              <View style={styles.ratingRow}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Ionicons
+                    key={i}
+                    name="star"
+                    size={16}
+                    color={i <= c.stars ? "#facc15" : "#555"}
+                  />
+                ))}
+              </View>
+            </View>
           ))}
         </View>
-
-        {/* Comentário */}
-        <TextInput
-          style={styles.commentInput}
-          placeholder="Escreva um comentário..."
-          value={comment}
-          onChangeText={setComment}
-        />
-        <TouchableOpacity onPress={handleSubmitComment} style={styles.submitButton}>
-          <Text style={styles.submitText}>Enviar</Text>
-        </TouchableOpacity>
-
-        {/* Comentários */}
-        {comments.map((c, index) => (
-          <View key={index} style={styles.commentBox}>
-            <Text style={styles.username}>{c.username}</Text>
-            <Text style={styles.commentText}>{c.text}</Text>
-            <View style={styles.ratingRow}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Ionicons
-                  key={i}
-                  name="star"
-                  size={16}
-                  color={i <= c.stars ? "#facc15" : "#ccc"}
-                />
-              ))}
-            </View>
-          </View>
-        ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -249,35 +228,73 @@ function formatTime(ms: number) {
   const totalSeconds = Math.floor(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
 }
 
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", paddingTop: 50, paddingHorizontal: 20 },
-  backButton: { position: "absolute", top: 50, left: 20, zIndex: 10, padding: 8 },
-  headerTitle: { textAlign: "center", fontSize: 20, fontWeight: "bold", color: "#333", marginBottom: 10 },
-  scrollContent: { alignItems: "center", paddingBottom: 50 },
-  collectionTitle: { color: "#666", fontSize: 14, marginBottom: 10 },
-  coverImage: { width: 280, height: 280, borderRadius: 12, marginBottom: 20 },
-  songTitle: { fontSize: 22, color: "#111", fontWeight: "bold", marginBottom: 4 },
-  artist: { color: "#666", fontSize: 14, marginBottom: 20 },
-  progressContainer: { width: "80%", height: 4, backgroundColor: "#ddd", borderRadius: 2, marginBottom: 6 },
-  progressBar: { height: 4, backgroundColor: "#a855f7", borderRadius: 2 },
-  timeRow: { width: "80%", flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
+  container: { flex: 1, backgroundColor: "#0c0c0e" },
+  scroll: { alignItems: "center", padding: 20, paddingBottom: 60 },
+  topBar: { flexDirection: "row", justifyContent: "space-between", width: "100%", marginBottom: 10 },
+  section: { color: "#aaa", fontSize: 12, marginBottom: 12 },
+  cover: { width: 260, height: 260, borderRadius: 12, marginBottom: 20 },
+  title: { color: "#fff", fontSize: 22, fontWeight: "bold", marginBottom: 4, textAlign: "center" },
+  artist: { color: "#bbb", fontSize: 14, marginBottom: 20, textAlign: "center" },
+  timeRow: { width: "100%", flexDirection: "row", justifyContent: "space-between", marginTop: 6, marginBottom: 16 },
   time: { color: "#888", fontSize: 12 },
-  controls: { flexDirection: "row", alignItems: "center", justifyContent: "space-around", width: "80%", marginBottom: 30 },
-  playButton: { backgroundColor: "#a855f7", padding: 20, borderRadius: 50, marginHorizontal: 20 },
-  lyricsTitle: { fontSize: 16, fontWeight: "bold", color: "#333", alignSelf: "flex-start", marginBottom: 8 },
-  lyrics: { fontSize: 14, color: "#444", lineHeight: 22, textAlign: "left", marginBottom: 20 },
-  likeButton: { backgroundColor: "#5b43f2", paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, flexDirection: "row", alignItems: "center", marginBottom: 16 },
-  likeText: { color: "#fff", marginLeft: 8, fontWeight: "600" },
-  sectionTitle: { alignSelf: "flex-start", fontWeight: "bold", fontSize: 14, marginBottom: 4, color: "#333" },
+  controls: { flexDirection: "row", justifyContent: "space-evenly", width: "100%", marginBottom: 20, alignItems: "center" },
+  playButton: {
+    backgroundColor: "#a855f7",
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  likeButton: { flexDirection: "row", alignItems: "center" },
+  likeText: { color: "#fff", marginLeft: 4 },
+  lyricsBox: {
+    backgroundColor: "#1c1c1e",
+    padding: 16,
+    borderRadius: 16,
+    width: "100%",
+    marginBottom: 20,
+  },
+  lyricsHeader: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  lyrics: {
+    color: "#ccc",
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  commentArea: { width: "100%", marginTop: 10 },
+  commentTitle: { color: "#fff", fontWeight: "bold", fontSize: 16, marginBottom: 8 },
   ratingRow: { flexDirection: "row", marginBottom: 8 },
-  commentInput: { width: "100%", borderColor: "#ccc", borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 10 },
-  submitButton: { backgroundColor: "#5b43f2", paddingVertical: 12, borderRadius: 8, width: "100%", alignItems: "center", marginBottom: 20 },
-  submitText: { color: "#fff", fontWeight: "bold" },
-  commentBox: { backgroundColor: "#f2f2f2", padding: 12, borderRadius: 8, width: "100%", marginBottom: 10 },
-  username: { fontWeight: "bold", marginBottom: 2 },
-  commentText: { marginBottom: 6, color: "#333" },
+  input: {
+    borderColor: "#444",
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    color: "#fff",
+    marginBottom: 8,
+  },
+  sendButton: {
+    backgroundColor: "#a855f7",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  sendText: { color: "#fff", fontWeight: "bold" },
+  commentBox: {
+    backgroundColor: "#18181b",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  username: { color: "#fff", fontWeight: "bold", marginBottom: 4 },
+  commentText: { color: "#ccc", marginBottom: 4 },
 });

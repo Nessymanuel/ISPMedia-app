@@ -147,7 +147,7 @@ export default function DashboardScreen() {
       </View>
       <FlatList
         horizontal
-        data={artists.slice(0, 5)}
+        data={artists.slice(0, 4)}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.artistList}
         showsHorizontalScrollIndicator={false}
@@ -156,7 +156,7 @@ export default function DashboardScreen() {
             <View style={styles.artistCard}>
               <Image source={{ uri: `${BASE_URL}${item.fotoArtista}` }} style={styles.artistAvatar} />
               <Text style={styles.artistName}>{item.nomeArtista}</Text>
-              <Text style={styles.artistMeta}>{item.nomeUtilizador}</Text>
+         
             </View>
           </TouchableOpacity>
         )}
@@ -180,7 +180,7 @@ export default function DashboardScreen() {
             <View style={styles.albumCard}>
               <Image source={{ uri: `${BASE_URL}${item.capaAlbum}` }} style={styles.albumCover} />
               <Text style={styles.albumTitle}>{item.tituloAlbum}</Text>
-              <Text style={styles.albumMeta}>{item.nomeEditor}</Text>
+            
             </View>
           </TouchableOpacity>
         )}
@@ -296,11 +296,11 @@ const styles = StyleSheet.create({
   seeAll: { fontSize: 12, color: "#4f46e5" },
   artistList: { paddingLeft: 20, marginBottom: 20 },
   albumList: { paddingLeft: 20, marginBottom: 20 },
-  artistCard: { alignItems: "flex-start", marginRight: 16, width: 80 },
+  artistCard: { alignItems: "center", marginRight: 16, width: 80 },
   artistAvatar: { width: 70, height: 70, borderRadius: 35, marginBottom: 4 },
   artistName: { fontSize: 12, color: "#333", textAlign: "center" },
   artistMeta: { fontSize: 11, color: "#666", textAlign: "center" },
-  albumCard: { alignItems: "flex-start", marginRight: 16, width: 80 },
+  albumCard: { alignItems: "center", marginRight: 16, width: 80 },
   albumCover: { width: 70, height: 70, borderRadius: 8, marginBottom: 4 },
   albumTitle: { fontSize: 12, color: "#333", textAlign: "center" },
   albumMeta: { fontSize: 11, color: "#666", textAlign: "center" },

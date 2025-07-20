@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
+import { SafeAreaView } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import axios from "axios";
@@ -134,7 +135,7 @@ useEffect(() => {
     try {
       const response = await axios.get(`${BASE_URL}/api/Musica/trending/${userId}`);
      
-      // setMusicas(response.data); // ← se você quiser mostrar na tela
+      setMeusUploads(response.data); // ← se você quiser mostrar na tela
     } catch (error) {
       console.error("Erro ao buscar músicas:", error);
     }
@@ -347,7 +348,10 @@ for (let pair of debugFormData._parts) {
 
       {/* Modal de Música */}
       <Modal visible={showMusicModal} animationType="slide">
+
+        <SafeAreaView style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.modalContainer}>
+        
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Upload de Música</Text>
             <TouchableOpacity onPress={() => setShowMusicModal(false)}>
@@ -437,11 +441,15 @@ for (let pair of debugFormData._parts) {
             <Text style={styles.submitText}>Enviar Música</Text>
           </TouchableOpacity>
         </ScrollView>
+        </SafeAreaView>
       </Modal>
 
       {/* Modal de Vídeo */}
       <Modal visible={showVideoModal} animationType="slide">
+        
+        <SafeAreaView style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.modalContainer}>
+       
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Upload de Vídeo</Text>
             <TouchableOpacity onPress={() => setShowVideoModal(false)}>
@@ -557,6 +565,7 @@ for (let pair of debugFormData._parts) {
             <Text style={styles.submitText}>Enviar Vídeo</Text>
           </TouchableOpacity>
         </ScrollView>
+         </SafeAreaView>
       </Modal>
     </View>
   );
